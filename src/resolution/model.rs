@@ -173,16 +173,17 @@ impl Problem for Psp {
 }
 
 /// This structure implements the PSP relaxation
-pub struct PspRelax {
+pub struct PspRelax<'a> {
     pb: Psp,
     mst: Vec<usize>,
+    compression_bound: Option<CompressedSolutionBound<'a, PspState>>,
 }
 
-impl PspRelax {
-    pub fn new(pb: Psp) -> Self {
+impl<'a> PspRelax<'a> {
+    pub fn new(pb: Psp, compression_bound: Option<CompressedSolutionBound<'a, PspState>>) -> Self {
         let mst = all_mst(&pb.changeover);
 
-        Self { pb, mst }
+        Self { pb, mst, compression_bound }
     }
 
     fn members(state: &PspState) -> Set32 {
@@ -199,7 +200,7 @@ impl PspRelax {
     }
 }
 
-impl Relaxation for PspRelax {
+impl<'a> Relaxation for PspRelax<'a> {
     type State = PspState;
 
     fn merge(&self, states: &mut dyn Iterator<Item = &Self::State>) -> Self::State {
@@ -247,7 +248,13 @@ impl Relaxation for PspRelax {
             }
         }
     
-        -(co + ww)
+        let mut rub = -(co + ww);
+
+        if let Some(bound) = &self.compression_bound {
+            rub = rub.min(bound.get_ub(state));
+        }
+
+        rub
     }
 }
 

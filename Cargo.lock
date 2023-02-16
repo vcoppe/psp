@@ -79,6 +79,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "clustering"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3824b1348063f57db52c9de656cccdb6ce8bf312aff8155837f3717a145cfcea"
+dependencies = [
+ "rand",
+]
+
+[[package]]
 name = "compare"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -135,15 +144,28 @@ dependencies = [
 [[package]]
 name = "ddo"
 version = "1.0.0"
-source = "git+https://github.com/xgillard/ddo#390bf90c383f03aba1566ae09dc94bfc57eeac56"
+source = "git+https://github.com/vcoppe/ddo?branch=compression#cf7510a979cfba9faff6c90fa332fda12d9b863f"
 dependencies = [
  "binary-heap-plus",
+ "clustering",
  "compare",
  "dashmap",
+ "derivative",
  "derive_builder",
  "fxhash",
  "num_cpus",
  "parking_lot",
+]
+
+[[package]]
+name = "derivative"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcc3dd5e9e9c0b295d6e1e4d811fb6f157d5ffd784b8d202fc62eac8035a770b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -479,6 +501,7 @@ name = "psp"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "clustering",
  "ddo",
  "rand",
  "rand_chacha",
