@@ -40,7 +40,7 @@ impl<'a> PspCompression<'a> {
                 psp: problem,
             });
         }
-        let clustering = kmeans(n_meta_items, &elems, 1000);
+        let clustering = kmeans(n_meta_items, Some(0), &elems, 1000);
 
         let stocking = Self::compute_meta_stocking(problem, &clustering.membership, n_meta_items);
         let changeover = Self::compute_meta_changeover(problem, &clustering.membership, n_meta_items);

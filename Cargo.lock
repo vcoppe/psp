@@ -88,6 +88,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "clustering"
+version = "0.1.0"
+source = "git+https://github.com/vcoppe/clustering#ba47ff2aba763896b694215258676e9b90a6bad0"
+dependencies = [
+ "rand",
+]
+
+[[package]]
 name = "compare"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -144,10 +152,10 @@ dependencies = [
 [[package]]
 name = "ddo"
 version = "1.0.0"
-source = "git+https://github.com/vcoppe/ddo?branch=compression#cf7510a979cfba9faff6c90fa332fda12d9b863f"
+source = "git+https://github.com/vcoppe/ddo?branch=compression#aae0b015b74e221b985aea0c7ea7fd3c86f3df3a"
 dependencies = [
  "binary-heap-plus",
- "clustering",
+ "clustering 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "compare",
  "dashmap",
  "derivative",
@@ -501,7 +509,7 @@ name = "psp"
 version = "0.1.0"
 dependencies = [
  "clap",
- "clustering",
+ "clustering 0.1.0 (git+https://github.com/vcoppe/clustering)",
  "ddo",
  "rand",
  "rand_chacha",

@@ -24,6 +24,9 @@ pub struct Solve {
     /// timeout
     #[clap(short, long, default_value="60")]
     pub timeout: u64,
+    /// number of threads used
+    #[clap(long, default_value="1")]
+    pub threads: usize,
     /// If present, the path where to write the output html
     #[clap(short, long)]
     pub output: Option<String>,
@@ -84,6 +87,7 @@ fn get_heuristic<'a>(compressor: &'a PspCompression, compression_heuristic: bool
 
 fn get_solver<'a, State>(
     solver: SolverType,
+    threads: usize,
     problem: &'a (dyn Problem<State = State> + Send + Sync),
     relaxation: &'a (dyn Relaxation<State = State> + Send + Sync),
     ranking: &'a (dyn StateRanking<State = State> + Send + Sync),
@@ -97,24 +101,26 @@ where State: Eq + Hash + Clone + Send + Sync
 {
     match solver {
         SolverType::Classic => {
-            Box::new(ParBarrierSolverFc::new(
+            Box::new(ParBarrierSolverFc::custom(
                 problem,
                 relaxation,
                 ranking,
                 width,
                 cutoff,
                 fringe,
+                threads,
                 heuristic_builder
             ))
         },
         SolverType::Hybrid => {
-            Box::new(HybridSolver::<State, SimpleBarrier<State>>::new(
+            Box::new(HybridSolver::<State, SimpleBarrier<State>>::custom(
                 problem,
                 relaxation,
                 ranking,
                 width,
                 cutoff,
                 fringe,
+                threads,
                 heuristic_builder
             ))
         },
@@ -149,6 +155,7 @@ impl Solve {
 
         let mut solver = get_solver(
             self.solver,
+            self.threads,
             &problem,
             relaxation.as_ref(),
             &ranking,
