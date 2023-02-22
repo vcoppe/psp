@@ -27,9 +27,6 @@ pub struct Solve {
     /// number of threads used
     #[clap(long, default_value="1")]
     pub threads: usize,
-    /// If present, the path where to write the output html
-    #[clap(short, long)]
-    pub output: Option<String>,
     /// The number of item clusters
     #[clap(short, long, default_value="5")]
     pub n_meta_items: usize,
