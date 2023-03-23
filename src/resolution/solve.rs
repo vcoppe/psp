@@ -1,11 +1,12 @@
 use std::fmt::Display;
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::Instant;
 use std::{fs::File, io::BufReader, time::Duration};
 use std::hash::Hash;
 
 use clap::Args;
-use ddo::{FixedWidth, TimeBudget, NoDupFringe, MaxUB, ParBarrierSolverFc, Completion, Solver, CompressedSolutionBound, DecisionHeuristicBuilder, NoHeuristicBuilder, CompressedSolutionHeuristicBuilder, SimpleBarrier, HybridSolver, WidthHeuristic, Problem, Relaxation, StateRanking, Cutoff, Fringe};
+use ddo::{FixedWidth, TimeBudget, NoDupFringe, MaxUB, ParBarrierSolverFc, Completion, Solver, CompressedSolutionBound, DecisionHeuristicBuilder, NoHeuristicBuilder, CompressedSolutionHeuristicBuilder, SimpleBarrier, HybridSolver, WidthHeuristic, Problem, Relaxation, StateRanking, Cutoff, Fringe, SubProblem, CompilationInput, CompilationType, NoCutoff, NoHeuristic, Barrier, Mdd, FRONTIER, VizConfigBuilder, DecisionDiagram};
 
 use crate::resolution::model::{Psp, PspRelax, PspRanking};
 use crate::instance::PspInstance;
@@ -145,44 +146,40 @@ impl Solve {
         let relaxation = get_relaxation(&compressor, self.compression_bound);
         let heuristic = get_heuristic(&compressor, self.compression_heuristic);
 
-        let width = FixedWidth(self.width);
-        let cutoff = TimeBudget::new(Duration::from_secs(self.timeout));
-        let ranking = PspRanking;
-        let mut fringe = NoDupFringe::new(MaxUB::new(&ranking));
+        let mut barrier = SimpleBarrier::<PspState>::default();
 
-        let mut solver = get_solver(
-            self.solver,
-            self.threads,
-            &problem,
-            relaxation.as_ref(),
-            &ranking,
-            &width,
-            &cutoff,
-            &mut fringe,
-            heuristic.as_ref()
-        );
+        barrier.initialize(&problem);
 
-        let start = Instant::now();
+        let residual = SubProblem { 
+            state: Arc::new(problem.initial_state()), 
+            value: 0, 
+            path: vec![], 
+            ub: isize::MAX, 
+            depth: 0
+        };
+        let input = CompilationInput {
+            comp_type: CompilationType::Relaxed,
+            problem: &problem,
+            relaxation: relaxation.as_ref(),
+            ranking: &PspRanking,
+            cutoff: &NoCutoff,
+            max_width: usize::MAX,
+            residual: &residual,
+            best_lb: isize::MIN,
+            barrier: &barrier,
+            heuristic: Arc::new(NoHeuristic),
+        };
 
-        let Completion{best_value, is_exact} = solver.maximize();
+        let mut clean = Mdd::<PspState, {FRONTIER}>::new();
+        _ = clean.compile(&input);
 
-        let duration = start.elapsed();
-
-        let best_value = best_value.map(|v| -v).unwrap_or(isize::MAX);
-
-        let mut sol = String::new();
-        solver.best_solution().unwrap()
-            .iter().map(|d| d.value)
-            .for_each(|v| sol.push_str(&format!("{v} ")));
-
-        println!("===== settings =====");
-        println!("solver     : {}", self.solver);
-        println!("cmpr. bound: {}", self.compression_bound);
-        println!("cmpr. heu. : {}", self.compression_heuristic);
-        println!("===== results  =====");
-        println!("is exact   : {is_exact}");
-        println!("best value : {best_value}");
-        println!("duration   : {:.3} seconds", duration.as_secs_f32());
-        println!("solution   : {sol}");
+        let config = VizConfigBuilder::default()
+            .show_deleted(true)
+            .group_merged(true)
+            .build()
+            .unwrap();
+        
+        let dot = clean.as_graphviz(&config);
+        println!("{dot}");
     }
 }
