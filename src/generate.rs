@@ -1,4 +1,4 @@
-use std::{time::{SystemTime, UNIX_EPOCH}, fs::File, io::Write};
+use std::{time::{SystemTime, UNIX_EPOCH}, fs::File, io::Write, collections::BTreeSet, ops::Bound::*};
 
 use clap::Args;
 use rand::{Rng, SeedableRng};
@@ -151,17 +151,15 @@ impl PspGenerator {
         let mut count = 0;
 
         let rand_type = Uniform::new(0, self.nb_types);
-        let rand_period = Uniform::new(0, self.nb_periods);
 
         while count < nb_demands {
+            let rand_period = Uniform::new(feasibility_check.min(), self.nb_periods);
             let p = rand_period.sample(rng);
-            if feasibility_check.can_add(p) {
-                let t = rand_type.sample(rng);
-                if demands[t][p] == 0 {
-                    demands[t][p] = 1;
-                    feasibility_check.add(p);
-                    count += 1;
-                }
+            let t = rand_type.sample(rng);
+            if demands[t][p] == 0 {
+                demands[t][p] = 1;
+                feasibility_check.remove(p);
+                count += 1;
             }
         }
 
@@ -179,38 +177,22 @@ impl PspGenerator {
 }
 
 struct PspFeasibility {
-    prev_available: Vec<Option<usize>>,
+    available: BTreeSet<usize>,
 }
 
 impl PspFeasibility {
     fn new(nb_periods: usize) -> Self {
         PspFeasibility {
-            prev_available: (0..nb_periods).map(|p| Some(p)).collect()
+            available: BTreeSet::from_iter(0..nb_periods)
         }
     }
 
-    fn can_add(&mut self, period: usize) -> bool {
-        self.prev_available(period).is_some()
+    fn min(&self) -> usize {
+        *self.available.first().unwrap()
     }
 
-    fn prev_available(&mut self, period: usize) -> Option<usize> {
-        match self.prev_available[period] {
-            Some(prev) => {
-                if prev != period {
-                    self.prev_available[period] = self.prev_available(prev);
-                }
-                self.prev_available[period]
-            },
-            None => None,
-        }
-    }
-
-    fn add(&mut self, period: usize) {
-        let prev = self.prev_available(period).unwrap();
-        if prev == 0 {
-            self.prev_available[prev] = None;
-        } else {
-            self.prev_available[prev] = Some(prev - 1);
-        }
+    fn remove(&mut self, period: usize) {
+        let largest = *self.available.range((Unbounded, Included(period))).last().unwrap();
+        self.available.remove(&largest);
     }
 }
